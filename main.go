@@ -4,28 +4,31 @@ import (
 	"crypto/rand"
 	"encoding/base32"
 	"fmt"
+	"net/http"
 )
 
 const KEYLEN = 10
-var randkey chan string
+
+var Randkey chan string
+var Delkey chan string
+var Closing chan chan bool
 
 func main() {
-// boilerplate code
-//    go control.start()
-//    http.Handle("/ws", websocket.Handler(socketStart))
-//    err := http.ListenAndServe(":11011", nil)
-//    if err != nil {
-//        fmt.Println("het is niet gelukt.. helaas")
-//    }
-	randkey := make(chan string)
-	delkey := make(chan string)
-	closing := make(chan chan bool)
-	go randomkeygenerator(randkey, delkey, closing)
-	for i := 0; i < 5000; i++ {
-		<-randkey
+	Randkey = make(chan string)
+	Delkey = make(chan string)
+	Closing = make(chan chan bool)
+	go randomkeygenerator(Randkey, Delkey, Closing)
+
+	// boilerplate code
+	go control.start()
+	http.HandleFunc("/", socketStart)
+	err := http.ListenAndServe(":11011", nil)
+	if err != nil {
+		fmt.Println("het is niet gelukt.. helaas")
 	}
+
 	closed := make(chan bool)
-	closing <- closed
+	Closing <- closed
 	<-closed
 
 	panic("just checking")
