@@ -38,8 +38,10 @@ func (control *controlstruct) start() {
 			control.clients[c.groupid][c.clientid] = c
 		case m := <-control.msg:
 			if m.groupid != "" || m.groupid == "" {
-				for _, client := range control.clients[m.groupid] {
-					client.send <- m.text
+				for clientid, client := range control.clients[m.groupid] {
+                    if clientid != m.fromid {
+                        client.send <- m.text
+                    }
 				}
 			}
 		}
