@@ -35,6 +35,7 @@ func (c *connection) read() {
 	defer func() {
 		control.disconnect <- c
 		c.socket.Close()
+        log.Println(c.clientid, "disconnected")
 	}()
 	c.socket.SetReadDeadline(time.Now().Add(readWait))
 	for {
@@ -121,6 +122,7 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 		groupid:  groupid,
 		socket:   ws,
 	}
+    log.Println(c.clientid, "connected from", r.RemoteAddr)
 	control.connect <- c
 	go c.writer()
 	c.read()

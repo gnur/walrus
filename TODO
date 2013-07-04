@@ -1,3 +1,3 @@
 cleanup keys from disconnected clients & groups
 make some sort of messaging scheme to prevent broadcasts
-allow new clients to receive their groupid & clientid
+log as much as possible w.i.p.

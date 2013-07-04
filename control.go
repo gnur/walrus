@@ -37,7 +37,21 @@ func (control *controlstruct) start() {
 			}
 			control.clients[c.groupid][c.clientid] = c
 		case m := <-control.msg:
-			if m.groupid != "" || m.groupid == "" {
+            if m.text == "getgroupid" {
+                control.clients[m.groupid][m.fromid].send <-m.groupid
+            } else if m.text == "getclientid" {
+                control.clients[m.groupid][m.fromid].send <-m.fromid
+            } else if m.text == "getallclientids" {
+                returntext := ""
+                for clientid, _ := range control.clients[m.groupid] {
+                    returntext += clientid + ","
+                }
+                if returntext == "" {
+                    returntext = ", "
+                }
+                fmt.Println(returntext)
+                control.clients[m.groupid][m.fromid].send <-returntext[:len(returntext)-1]
+            } else {
 				for clientid, client := range control.clients[m.groupid] {
                     if clientid != m.fromid {
                         client.send <- m.text

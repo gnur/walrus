@@ -5,6 +5,8 @@ import (
 	"encoding/base32"
 	"fmt"
 	"net/http"
+    "os"
+    "log"
 )
 
 const KEYLEN = 10
@@ -14,6 +16,11 @@ var Delkey chan string
 var Closing chan chan bool
 
 func main() {
+    f, _ := os.OpenFile("walrus.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
+    log.SetOutput(f)
+    defer func() {
+        f.Close()
+    }()
 	Randkey = make(chan string)
 	Delkey = make(chan string)
 	Closing = make(chan chan bool)
