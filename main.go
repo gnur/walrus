@@ -7,7 +7,10 @@ import (
 	"net/http"
     "os"
     "log"
+    "flag"
 )
+
+var port *int = flag.Int("p", 11011, "Port to listen.")
 
 const KEYLEN = 10
 
@@ -16,6 +19,7 @@ var Delkey chan string
 var Closing chan chan bool
 
 func main() {
+    flag.Parse()
     f, _ := os.OpenFile("walrus.log", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0660)
     log.SetOutput(f)
     defer func() {
@@ -29,7 +33,7 @@ func main() {
 	// boilerplate code
 	go control.start()
 	http.HandleFunc("/", socketStart)
-	err := http.ListenAndServe(":11011", nil)
+	err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {
 		fmt.Println("het is niet gelukt.. helaas")
 	}

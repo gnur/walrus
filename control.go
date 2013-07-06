@@ -23,8 +23,10 @@ func (control *controlstruct) start() {
 			fmt.Println("discconect")
 			close(c.send)
 			delete(control.clients[c.groupid], c.clientid)
+            Delkey <- c.clientid
 			if len(control.clients[c.groupid]) == 0 {
 				delete(control.clients, c.groupid)
+                Delkey <- c.groupid
 				fmt.Println("all clients from", c.groupid, "disconnected")
 			}
 		case c := <-control.connect:
