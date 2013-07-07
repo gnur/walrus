@@ -13,6 +13,7 @@ import (
 var port *int = flag.Int("p", 11011, "Port to listen.")
 
 const KEYLEN = 10
+const SERVERID = "walrus"
 
 var Randkey chan string
 var Delkey chan string

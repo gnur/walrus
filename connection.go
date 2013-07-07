@@ -18,6 +18,7 @@ const (
 )
 
 type message struct {
+    toid    string
 	fromid  string
 	groupid string
 	text    string
@@ -51,13 +52,17 @@ func (c *connection) read() {
 		case websocket.OpText:
 			incoming, err := ioutil.ReadAll(r)
 			if err == nil {
-				var msg = message{
-					groupid: c.groupid,
-					fromid:  c.clientid,
-					text:    string(incoming),
-				}
-				fmt.Println(msg.text)
-				control.msg <- msg
+                parts := strings.SplitN(string(incoming), ":", 2)
+                if parts != nil && len(parts) == 2 {
+                    var msg = message{
+                        toid: parts[0],
+                        groupid: c.groupid,
+                        fromid:  c.clientid,
+                        text:    parts[1],
+                    }
+                    fmt.Println(msg.text)
+                    control.msg <- msg
+                }
 			} else {
 				fmt.Println(err)
 			}
@@ -114,13 +119,23 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 	}
 	parts := strings.Split(r.URL.Path[1:], "/")
 	groupid := ""
+    clientid := ""
 	if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[0]); er == nil && match {
 		groupid = parts[0]
         Addkey <-groupid
 	}
+    if len(parts) > 1 {
+        if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[1]); er == nil && match {
+            clientid = parts[1]
+            Addkey <-clientid
+        }
+	} 
+    if clientid == "" {
+        clientid = <-Randkey
+    }
 	c := &connection{
 		send:     make(chan string),
-		clientid: <-Randkey,
+		clientid: clientid,
 		groupid:  groupid,
 		socket:   ws,
 	}

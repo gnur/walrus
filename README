@@ -1,3 +1,37 @@
 Walrus is a websocket server
 
 It allows you to easily enable near real time communication between javascript clients.
+
+Default websocket port is 11011, can be adjusted with the -p flag.
+
+Clients can connect to:
+
+ws://localhost:11011 to get a groupid and client id
+
+or 
+
+ws://localhost:11011/<groupid [A-Z0-9]{16}> to connect with a known groupid
+
+or
+
+ws://localhost:11011/<groupid [A-Z0-9]{16}>/<clientid [A-Z0-9]{16} to reconnect to a known groupid with previously assigned clientid
+
+
+Messaging protocal
+The messaging protocal users a prefix to target a specific clientid. The server can be messaged with:
+
+walrus:<command>
+
+A specific client can be messaged with:
+
+1234567890123456:<command>
+
+Broadcasts can be sent with:
+
+:<command>
+
+Commands that can be sent to the server are:
+
+getclientid     : get current clientid
+getgroupid      : get current groupid
+getallclientids : get all clients within current group (including your own clientid)
