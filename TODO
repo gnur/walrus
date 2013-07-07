@@ -1,4 +1,2 @@
-cleanup keys from disconnected clients & groups
-add user generated keys to used keys map
 make some sort of messaging scheme to prevent broadcasts
 log as much as possible w.i.p.

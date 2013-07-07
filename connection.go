@@ -46,6 +46,7 @@ func (c *connection) read() {
 		}
 		switch op {
 		case websocket.OpPong:
+            log.Println(c.clientid, "pong")
 			c.socket.SetReadDeadline(time.Now().Add(readWait))
 		case websocket.OpText:
 			incoming, err := ioutil.ReadAll(r)
@@ -87,6 +88,7 @@ func (c *connection) writer() {
 				return
 			}
 		case <-ticker.C:
+            log.Println(c.clientid, "ping")
 			if err := c.write(websocket.OpPing, []byte{}); err != nil {
 				c.err = err
 				return
@@ -108,13 +110,13 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		log.Println(err)
-		fmt.Println(err)
 		return
 	}
 	parts := strings.Split(r.URL.Path[1:], "/")
 	groupid := ""
 	if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[0]); er == nil && match {
 		groupid = parts[0]
+        Addkey <-groupid
 	}
 	c := &connection{
 		send:     make(chan string),

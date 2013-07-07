@@ -17,6 +17,7 @@ const KEYLEN = 10
 var Randkey chan string
 var Delkey chan string
 var Closing chan chan bool
+var Addkey chan string
 
 func main() {
     flag.Parse()
@@ -28,7 +29,8 @@ func main() {
 	Randkey = make(chan string)
 	Delkey = make(chan string)
 	Closing = make(chan chan bool)
-	go randomkeygenerator(Randkey, Delkey, Closing)
+    Addkey = make(chan string)
+	go randomkeygenerator(Randkey, Delkey, Closing, Addkey)
 
 	// boilerplate code
 	go control.start()
@@ -45,7 +47,7 @@ func main() {
 	panic("just checking")
 }
 
-func randomkeygenerator(c chan string, del chan string, closing chan chan bool) {
+func randomkeygenerator(c chan string, del chan string, closing chan chan bool, add chan string) {
 	var currentkey string
 	b := make([]byte, KEYLEN)
 	en := base32.StdEncoding
@@ -68,6 +70,10 @@ func randomkeygenerator(c chan string, del chan string, closing chan chan bool) 
 				usedkeys[key] = false
 				delete(usedkeys, key)
 			}
+        case key := <-add:
+            if !usedkeys[key] {
+                usedkeys[key] = true
+            }
 		case t := <-closing:
 			fmt.Println("killing myself now")
 			t <- true
