@@ -2,15 +2,21 @@ package main
 
 import "fmt"
 
+
 type controlstruct struct {
 	clients    map[string]map[string]*connection
-	connect    chan *connection
+	connect    chan *start
 	disconnect chan *connection
 	msg        chan message
 }
 
+type start struct {
+    connection     *connection
+    response    chan bool
+}
+
 var control = controlstruct{
-	connect:    make(chan *connection),
+	connect:    make(chan *start),
 	disconnect: make(chan *connection),
 	msg:        make(chan message),
 	clients:    make(map[string]map[string]*connection),
@@ -20,7 +26,7 @@ func (control *controlstruct) start() {
 	for {
 		select {
 		case c := <-control.disconnect:
-			fmt.Println("discconect")
+			fmt.Println("disconnect")
 			close(c.send)
 			delete(control.clients[c.groupid], c.clientid)
             Delkey <- c.clientid
@@ -29,7 +35,8 @@ func (control *controlstruct) start() {
                 Delkey <- c.groupid
 				fmt.Println("all clients from", c.groupid, "disconnected")
 			}
-		case c := <-control.connect:
+		case start := <-control.connect:
+            c := start.connection
 			if c.groupid == "" {
 				c.groupid = <-Randkey
 			}
@@ -37,7 +44,13 @@ func (control *controlstruct) start() {
 			if _, ok := control.clients[c.groupid]; !ok {
 				control.clients[c.groupid] = make(map[string]*connection)
 			}
-			control.clients[c.groupid][c.clientid] = c
+            if _, exists := control.clients[c.groupid][c.clientid]; exists {
+                c.socket.Close()
+                start.response <- false
+            } else {
+                control.clients[c.groupid][c.clientid] = c
+                start.response <- true
+            }
 		case m := <-control.msg:
             if m.toid == SERVERID {
                 if m.text == "getgroupid" {

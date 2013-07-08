@@ -27,6 +27,7 @@ func main() {
     defer func() {
         f.Close()
     }()
+    log.Println("-- Starting ", SERVERID, "--")
 	Randkey = make(chan string)
 	Delkey = make(chan string)
 	Closing = make(chan chan bool)

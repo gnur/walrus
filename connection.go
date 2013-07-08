@@ -129,7 +129,7 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
             clientid = parts[1]
             Addkey <-clientid
         }
-	} 
+	}
     if clientid == "" {
         clientid = <-Randkey
     }
@@ -140,7 +140,18 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 		socket:   ws,
 	}
     log.Println(c.clientid, "connected from", r.RemoteAddr)
-	control.connect <- c
-	go c.writer()
-	c.read()
+    response := make(chan bool)
+    start := &start{
+        connection: c,
+        response: response,
+    }
+	control.connect <- start
+    if <-response {
+        close(response)
+        go c.writer()
+        c.read()
+    } else {
+        log.Println(c.clientid, "disconnected because id is already in use")
+        close(response)
+    }
 }
