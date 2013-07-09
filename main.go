@@ -39,7 +39,7 @@ func main() {
 	http.HandleFunc("/", socketStart)
 	err := http.ListenAndServe(fmt.Sprintf(":%d", *port), nil)
 	if err != nil {
-		fmt.Println("het is niet gelukt.. helaas")
+		log.Println("server kon niet gestart worden het is niet gelukt.. helaas")
 	}
 
 	closed := make(chan bool)
@@ -77,7 +77,6 @@ func randomkeygenerator(c chan string, del chan string, closing chan chan bool, 
                 usedkeys[key] = true
             }
 		case t := <-closing:
-			fmt.Println("killing myself now")
 			t <- true
 			return
 		}

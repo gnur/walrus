@@ -1,7 +1,6 @@
 package main
 
-import "fmt"
-
+import "log"
 
 type controlstruct struct {
 	clients    map[string]map[string]*connection
@@ -26,21 +25,19 @@ func (control *controlstruct) start() {
 	for {
 		select {
 		case c := <-control.disconnect:
-			fmt.Println("disconnect")
 			close(c.send)
 			delete(control.clients[c.groupid], c.clientid)
             Delkey <- c.clientid
 			if len(control.clients[c.groupid]) == 0 {
 				delete(control.clients, c.groupid)
                 Delkey <- c.groupid
-				fmt.Println("all clients from", c.groupid, "disconnected")
+				log.Println("all clients from", c.groupid, "disconnected")
 			}
 		case start := <-control.connect:
             c := start.connection
 			if c.groupid == "" {
 				c.groupid = <-Randkey
 			}
-			fmt.Println(c.groupid)
 			if _, ok := control.clients[c.groupid]; !ok {
 				control.clients[c.groupid] = make(map[string]*connection)
 			}
@@ -65,7 +62,6 @@ func (control *controlstruct) start() {
                     if returntext == "" {
                         returntext = ", "
                     }
-                    fmt.Println(returntext)
                     control.clients[m.groupid][m.fromid].send <-SERVERID + ":" + returntext[:len(returntext)-1]
                 }
             } else if m.toid != "" {

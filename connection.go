@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"github.com/garyburd/go-websocket/websocket"
 	"io/ioutil"
 	"log"
@@ -60,11 +59,8 @@ func (c *connection) read() {
                         fromid:  c.clientid,
                         text:    parts[1],
                     }
-                    fmt.Println(msg.text)
                     control.msg <- msg
                 }
-			} else {
-				fmt.Println(err)
 			}
 		}
 	}
@@ -105,13 +101,11 @@ func (c *connection) writer() {
 func socketStart(w http.ResponseWriter, r *http.Request) {
 	if r.Method != "GET" {
 		http.Error(w, "Method not allowed", 405)
-		fmt.Println("GET")
 		return
 	}
 	ws, err := websocket.Upgrade(w, r.Header, nil, 1024, 1024)
 	if _, ok := err.(websocket.HandshakeError); ok {
 		http.Error(w, "Not a websocket handshake", 400)
-		fmt.Println("geen websocket")
 		return
 	} else if err != nil {
 		log.Println(err)
