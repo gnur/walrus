@@ -69,10 +69,8 @@ func (control *controlstruct) start() {
                     target.send <-m.fromid + ":" + m.text
                 }
             } else {
-				for clientid, client := range control.clients[m.groupid] {
-                    if clientid != m.fromid {
-                        client.send <- m.fromid + ":" + m.text
-                    }
+				for _, client := range control.clients[m.groupid] {
+                    client.send <- m.fromid + ":" + m.text
 				}
 			}
 		}
