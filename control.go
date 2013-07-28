@@ -27,16 +27,22 @@ func (control *controlstruct) start() {
 		case c := <-control.disconnect:
 			close(c.send)
 			delete(control.clients[c.groupid], c.clientid)
-            Delkey <- c.clientid
+            ch := make(chan string)
+            Keyctrl <- Keycmd{action: "del", key:c.clientid, resp: ch}
+            <-ch
 			if len(control.clients[c.groupid]) == 0 {
 				delete(control.clients, c.groupid)
-                Delkey <- c.groupid
+                ch := make(chan string)
+                Keyctrl <- Keycmd{action: "del", key:c.groupid, resp: ch}
+                <-ch
 				log.Println("all clients from", c.groupid, "disconnected")
 			}
 		case start := <-control.connect:
             c := start.connection
 			if c.groupid == "" {
-				c.groupid = <-Randkey
+                ch := make(chan string)
+                Keyctrl <- Keycmd{action: "get", resp: ch}
+				c.groupid = <-ch
 			}
 			if _, ok := control.clients[c.groupid]; !ok {
 				control.clients[c.groupid] = make(map[string]*connection)

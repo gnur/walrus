@@ -106,6 +106,7 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 	ws, err := websocket.Upgrade(w, r.Header, nil, 1024, 1024)
 	if _, ok := err.(websocket.HandshakeError); ok {
 		http.Error(w, "Not a websocket handshake", 400)
+        log.Println("client disconnected due to invalid handshake")
 		return
 	} else if err != nil {
 		log.Println(err)
@@ -116,16 +117,22 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
     clientid := ""
 	if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[0]); er == nil && match {
 		groupid = parts[0]
-        Addkey <-groupid
+        ch := make(chan string)
+        Keyctrl <- Keycmd{action: "add", key: groupid, resp: ch}
+        <- ch
 	}
     if len(parts) > 1 {
         if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[1]); er == nil && match {
             clientid = parts[1]
-            Addkey <-clientid
+            ch := make(chan string)
+            Keyctrl <- Keycmd{action: "add", key: clientid, resp: ch}
+            <- ch
         }
 	}
     if clientid == "" {
-        clientid = <-Randkey
+        ch := make(chan string)
+        Keyctrl <- Keycmd{action: "get", resp: ch}
+        clientid = <-ch
     }
 	c := &connection{
 		send:     make(chan string),

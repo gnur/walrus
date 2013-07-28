@@ -12,13 +12,17 @@ import (
 
 var port *int = flag.Int("p", 11011, "Port to listen.")
 
+type Keycmd struct {
+    action string
+    key string
+    resp chan string
+}
+    
+
 const KEYLEN = 10
 const SERVERID = "walrus"
 
-var Randkey chan string
-var Delkey chan string
-var Closing chan chan bool
-var Addkey chan string
+var Keyctrl chan Keycmd
 
 func main() {
     flag.Parse()
@@ -28,11 +32,8 @@ func main() {
         f.Close()
     }()
     log.Println("-- Starting ", SERVERID, "--")
-	Randkey = make(chan string)
-	Delkey = make(chan string)
-	Closing = make(chan chan bool)
-    Addkey = make(chan string)
-	go randomkeygenerator(Randkey, Delkey, Closing, Addkey)
+    Keyctrl = make(chan Keycmd)
+    go randomkeygenerator(Keyctrl)
 
 	// boilerplate code
 	go control.start()
@@ -42,15 +43,12 @@ func main() {
 		log.Println("server kon niet gestart worden het is niet gelukt.. helaas")
 	}
 
-	closed := make(chan bool)
-	Closing <- closed
-	<-closed
-
 	panic("just checking")
 }
 
-func randomkeygenerator(c chan string, del chan string, closing chan chan bool, add chan string) {
+func randomkeygenerator(c chan Keycmd) {
 	var currentkey string
+    var todo Keycmd
 	b := make([]byte, KEYLEN)
 	en := base32.StdEncoding
 	usedkeys := make(map[string]bool)
@@ -63,22 +61,38 @@ func randomkeygenerator(c chan string, del chan string, closing chan chan bool, 
 		if usedkeys[currentkey] {
 			goto retry
 		}
-
-		select {
-		case c <- currentkey:
-			usedkeys[currentkey] = true
-		case key := <-del:
-			if usedkeys[key] {
-				usedkeys[key] = false
-				delete(usedkeys, key)
-			}
-        case key := <-add:
-            if !usedkeys[key] {
-                usedkeys[key] = true
-            }
-		case t := <-closing:
-			t <- true
-			return
-		}
+        //action key response
+        todo = <- c
+        switch todo.action {
+            case "get":
+                todo.resp <- currentkey
+                usedkeys[currentkey] = true
+                close(todo.resp)
+            case "del":
+                todo.resp <- "ok"
+                if usedkeys[todo.key] {
+                    usedkeys[todo.key] = false
+                    delete(usedkeys, todo.key)
+                }
+                close(todo.resp)
+            case "add":
+                todo.resp <- "ok"
+                if !usedkeys[todo.key] {
+                    usedkeys[todo.key] = true
+                }
+            case "short":
+                for i := 3; i < len(todo.key); i++ {
+                    count := 0
+                    for key := range usedkeys {
+                        if todo.key[0:i] == key[0:i] {
+                            count++
+                        }
+                    }
+                    if count == 1 {
+                        todo.resp <- todo.key[0:i]
+                        break
+                    }
+                }
+        }
 	}
 }
