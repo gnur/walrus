@@ -1,1 +1,2 @@
 log as much as possible w.i.p.
+save short id's given with the main key so no race conditions can exist

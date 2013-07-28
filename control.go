@@ -60,6 +60,10 @@ func (control *controlstruct) start() {
                     control.clients[m.groupid][m.fromid].send <-SERVERID + ":" + m.groupid
                 } else if m.text == "getclientid" {
                     control.clients[m.groupid][m.fromid].send <-SERVERID + ":" + m.fromid
+                } else if m.text == "getshortid" {
+                    ch := make(chan string)
+                    Keyctrl <- Keycmd{action: "short", key:m.groupid, resp: ch}
+                    control.clients[m.groupid][m.fromid].send <- SERVERID + ":" + <- ch
                 } else if m.text == "getallclientids" {
                     returntext := ""
                     for clientid, _ := range control.clients[m.groupid] {

@@ -115,11 +115,17 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 	parts := strings.Split(r.URL.Path[1:], "/")
 	groupid := ""
     clientid := ""
-	if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[0]); er == nil && match {
+	if match, er := regexp.MatchString("^[A-Z0-9]{3,16}$", parts[0]); er == nil && match {
 		groupid = parts[0]
-        ch := make(chan string)
-        Keyctrl <- Keycmd{action: "add", key: groupid, resp: ch}
-        <- ch
+        if len(groupid) < 16 {
+            ch := make(chan string)
+            Keyctrl <- Keycmd{action: "getfullkey", key: groupid, resp: ch}
+            groupid = <- ch
+        } else {
+            ch := make(chan string)
+            Keyctrl <- Keycmd{action: "add", key: groupid, resp: ch}
+            <- ch
+        }
 	}
     if len(parts) > 1 {
         if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[1]); er == nil && match {

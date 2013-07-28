@@ -75,6 +75,16 @@ func randomkeygenerator(c chan Keycmd) {
                     delete(usedkeys, todo.key)
                 }
                 close(todo.resp)
+            case "getfullkey":
+                returnkey := ""
+                for key := range usedkeys {
+                    if todo.key == key[0:len(todo.key)] {
+                        returnkey = key
+                        break
+                    }
+                }
+                todo.resp <- returnkey
+                close(todo.resp)
             case "add":
                 todo.resp <- "ok"
                 if !usedkeys[todo.key] {
