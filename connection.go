@@ -3,7 +3,6 @@ package main
 import (
 	"github.com/garyburd/go-websocket/websocket"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -35,7 +34,6 @@ func (c *connection) read() {
 	defer func() {
 		control.disconnect <- c
 		c.socket.Close()
-        log.Println(c.clientid, "disconnected")
 	}()
 	c.socket.SetReadDeadline(time.Now().Add(readWait))
 	for {
@@ -46,7 +44,6 @@ func (c *connection) read() {
 		}
 		switch op {
 		case websocket.OpPong:
-            log.Println(c.clientid, "pong")
 			c.socket.SetReadDeadline(time.Now().Add(readWait))
 		case websocket.OpText:
 			incoming, err := ioutil.ReadAll(r)
@@ -89,7 +86,6 @@ func (c *connection) writer() {
 				return
 			}
 		case <-ticker.C:
-            log.Println(c.clientid, "ping")
 			if err := c.write(websocket.OpPing, []byte{}); err != nil {
 				c.err = err
 				return
@@ -106,10 +102,8 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 	ws, err := websocket.Upgrade(w, r.Header, nil, 1024, 1024)
 	if _, ok := err.(websocket.HandshakeError); ok {
 		http.Error(w, "Not a websocket handshake", 400)
-        log.Println("client disconnected due to invalid handshake")
 		return
 	} else if err != nil {
-		log.Println(err)
 		return
 	}
 	parts := strings.Split(r.URL.Path[1:], "/")
@@ -146,7 +140,6 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 		groupid:  groupid,
 		socket:   ws,
 	}
-    log.Println(c.clientid, "connected from", r.RemoteAddr)
     response := make(chan bool)
     start := &start{
         connection: c,
@@ -158,7 +151,6 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
         go c.writer()
         c.read()
     } else {
-        log.Println(c.clientid, "disconnected because id is already in use")
         close(response)
     }
 }

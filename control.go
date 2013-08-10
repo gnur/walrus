@@ -1,6 +1,5 @@
 package main
 
-import "log"
 
 type controlstruct struct {
 	clients    map[string]map[string]*connection
@@ -35,7 +34,6 @@ func (control *controlstruct) start() {
                 ch := make(chan string)
                 Keyctrl <- Keycmd{action: "del", key:c.groupid, resp: ch}
                 <-ch
-				log.Println("all clients from", c.groupid, "disconnected")
 			}
 		case start := <-control.connect:
             c := start.connection
