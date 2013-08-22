@@ -1,6 +1,5 @@
 package main
 
-
 type controlstruct struct {
 	clients    map[string]map[string]*connection
 	connect    chan *start
@@ -9,8 +8,8 @@ type controlstruct struct {
 }
 
 type start struct {
-    connection     *connection
-    response    chan bool
+	connection *connection
+	response   chan bool
 }
 
 var control = controlstruct{
@@ -26,59 +25,57 @@ func (control *controlstruct) start() {
 		case c := <-control.disconnect:
 			close(c.send)
 			delete(control.clients[c.groupid], c.clientid)
-            ch := make(chan string)
-            Keyctrl <- Keycmd{action: "del", key:c.clientid, resp: ch}
-            <-ch
+			ch := make(chan string)
+			Keyctrl <- Keycmd{action: "del", key: c.clientid, resp: ch}
+			<-ch
 			if len(control.clients[c.groupid]) == 0 {
 				delete(control.clients, c.groupid)
-                ch := make(chan string)
-                Keyctrl <- Keycmd{action: "del", key:c.groupid, resp: ch}
-                <-ch
+				ch := make(chan string)
+				Keyctrl <- Keycmd{action: "del", key: c.groupid, resp: ch}
+				<-ch
 			}
 		case start := <-control.connect:
-            c := start.connection
+			c := start.connection
 			if c.groupid == "" {
-                ch := make(chan string)
-                Keyctrl <- Keycmd{action: "get", resp: ch}
+				ch := make(chan string)
+				Keyctrl <- Keycmd{action: "get", resp: ch}
 				c.groupid = <-ch
 			}
 			if _, ok := control.clients[c.groupid]; !ok {
 				control.clients[c.groupid] = make(map[string]*connection)
 			}
-            if _, exists := control.clients[c.groupid][c.clientid]; exists {
-                c.socket.Close()
-                start.response <- false
-            } else {
-                control.clients[c.groupid][c.clientid] = c
-                start.response <- true
-            }
+			if _, exists := control.clients[c.groupid][c.clientid]; exists {
+				c.socket.Close()
+				start.response <- false
+			} else {
+				control.clients[c.groupid][c.clientid] = c
+				start.response <- true
+			}
 		case m := <-control.msg:
-            if m.toid == SERVERID {
-                if m.text == "getgroupid" {
-                    control.clients[m.groupid][m.fromid].send <-SERVERID + ":" + m.groupid
-                } else if m.text == "getclientid" {
-                    control.clients[m.groupid][m.fromid].send <-SERVERID + ":" + m.fromid
-                } else if m.text == "getshortid" {
-                    ch := make(chan string)
-                    Keyctrl <- Keycmd{action: "short", key:m.groupid, resp: ch}
-                    control.clients[m.groupid][m.fromid].send <- SERVERID + ":" + <- ch
-                } else if m.text == "getallclientids" {
-                    returntext := ""
-                    for clientid, _ := range control.clients[m.groupid] {
-                        returntext += clientid + ","
-                    }
-                    if returntext == "" {
-                        returntext = ", "
-                    }
-                    control.clients[m.groupid][m.fromid].send <-SERVERID + ":" + returntext[:len(returntext)-1]
-                }
-            } else if m.toid != "" {
-                if target, ok :=control.clients[m.groupid][m.toid]; ok {
-                    target.send <-m.fromid + ":" + m.text
-                }
-            } else {
+			if m.toid == SERVERID {
+				if m.text == "getgroupid" {
+					control.clients[m.groupid][m.fromid].send <- SERVERID + ":" + m.groupid
+				} else if m.text == "info" {
+					control.clients[m.groupid][m.fromid].send <- `{"sender":"` + SERVERID + `", "groupid":"` + m.groupid + `", "clientid":"` + m.fromid + `", "msg":""}`
+				} else if m.text == "getclientid" {
+					control.clients[m.groupid][m.fromid].send <- SERVERID + ":" + m.fromid
+				} else if m.text == "getallclientids" {
+					returntext := ""
+					for clientid, _ := range control.clients[m.groupid] {
+						returntext += clientid + ","
+					}
+					if returntext == "" {
+						returntext = ", "
+					}
+					control.clients[m.groupid][m.fromid].send <- SERVERID + ":" + returntext[:len(returntext)-1]
+				}
+			} else if m.toid != "" {
+				if target, ok := control.clients[m.groupid][m.toid]; ok {
+					target.send <- m.fromid + ":" + m.text
+				}
+			} else {
 				for _, client := range control.clients[m.groupid] {
-                    client.send <- m.fromid + ":" + m.text
+					client.send <- m.fromid + ":" + m.text
 				}
 			}
 		}

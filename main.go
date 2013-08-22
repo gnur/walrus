@@ -30,16 +30,11 @@ func main() {
 
 	// boilerplate code
 	go control.start()
-    stop := make(chan bool)
 	http.HandleFunc("/", socketStart)
-    go func() {
-        err := http.ListenAndServeTLS(fmt.Sprintf(":%d", *sslport), *sslcrt, *sslkey, nil)
-        if err != nil {
-            fmt.Println("server kon niet gestart worden het is niet gelukt.. helaas")
-        }
-        stop<-true
-    }()
-    <-stop
+	err := http.ListenAndServeTLS(fmt.Sprintf(":%d", *sslport), *sslcrt, *sslkey, nil)
+	if err != nil {
+		fmt.Println("server kon niet gestart worden het is niet gelukt.. helaas")
+	}
 }
 
 func randomkeygenerator(c chan Keycmd) {
@@ -71,33 +66,10 @@ func randomkeygenerator(c chan Keycmd) {
 				delete(usedkeys, todo.key)
 			}
 			close(todo.resp)
-		case "getfullkey":
-			returnkey := ""
-			for key := range usedkeys {
-				if todo.key == key[0:len(todo.key)] {
-					returnkey = key
-					break
-				}
-			}
-			todo.resp <- returnkey
-			close(todo.resp)
 		case "add":
 			todo.resp <- "ok"
 			if !usedkeys[todo.key] {
 				usedkeys[todo.key] = true
-			}
-		case "short":
-			for i := 3; i < len(todo.key); i++ {
-				count := 0
-				for key := range usedkeys {
-					if todo.key[0:i] == key[0:i] {
-						count++
-					}
-				}
-				if count == 1 {
-					todo.resp <- todo.key[0:i]
-					break
-				}
 			}
 		}
 	}

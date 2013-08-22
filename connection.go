@@ -16,7 +16,7 @@ const (
 )
 
 type message struct {
-    toid    string
+	toid    string
 	fromid  string
 	groupid string
 	text    string
@@ -48,16 +48,16 @@ func (c *connection) read() {
 		case websocket.OpText:
 			incoming, err := ioutil.ReadAll(r)
 			if err == nil {
-                parts := strings.SplitN(string(incoming), ":", 2)
-                if parts != nil && len(parts) == 2 {
-                    var msg = message{
-                        toid: parts[0],
-                        groupid: c.groupid,
-                        fromid:  c.clientid,
-                        text:    parts[1],
-                    }
-                    control.msg <- msg
-                }
+				parts := strings.SplitN(string(incoming), ":", 2)
+				if parts != nil && len(parts) == 2 {
+					var msg = message{
+						toid:    parts[0],
+						groupid: c.groupid,
+						fromid:  c.clientid,
+						text:    parts[1],
+					}
+					control.msg <- msg
+				}
 			}
 		}
 	}
@@ -108,49 +108,43 @@ func socketStart(w http.ResponseWriter, r *http.Request) {
 	}
 	parts := strings.Split(r.URL.Path[1:], "/")
 	groupid := ""
-    clientid := ""
-	if match, er := regexp.MatchString("^[A-Z0-9]{3,16}$", parts[0]); er == nil && match {
+	clientid := ""
+	if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[0]); er == nil && match {
 		groupid = parts[0]
-        if len(groupid) < 16 {
-            ch := make(chan string)
-            Keyctrl <- Keycmd{action: "getfullkey", key: groupid, resp: ch}
-            groupid = <- ch
-        } else {
-            ch := make(chan string)
-            Keyctrl <- Keycmd{action: "add", key: groupid, resp: ch}
-            <- ch
-        }
+		ch := make(chan string)
+		Keyctrl <- Keycmd{action: "add", key: groupid, resp: ch}
+		<-ch
 	}
-    if len(parts) > 1 {
-        if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[1]); er == nil && match {
-            clientid = parts[1]
-            ch := make(chan string)
-            Keyctrl <- Keycmd{action: "add", key: clientid, resp: ch}
-            <- ch
-        }
+	if len(parts) > 1 {
+		if match, er := regexp.MatchString("^[A-Z0-9]{16}$", parts[1]); er == nil && match {
+			clientid = parts[1]
+			ch := make(chan string)
+			Keyctrl <- Keycmd{action: "add", key: clientid, resp: ch}
+			<-ch
+		}
 	}
-    if clientid == "" {
-        ch := make(chan string)
-        Keyctrl <- Keycmd{action: "get", resp: ch}
-        clientid = <-ch
-    }
+	if clientid == "" {
+		ch := make(chan string)
+		Keyctrl <- Keycmd{action: "get", resp: ch}
+		clientid = <-ch
+	}
 	c := &connection{
 		send:     make(chan string),
 		clientid: clientid,
 		groupid:  groupid,
 		socket:   ws,
 	}
-    response := make(chan bool)
-    start := &start{
-        connection: c,
-        response: response,
-    }
+	response := make(chan bool)
+	start := &start{
+		connection: c,
+		response:   response,
+	}
 	control.connect <- start
-    if <-response {
-        close(response)
-        go c.writer()
-        c.read()
-    } else {
-        close(response)
-    }
+	if <-response {
+		close(response)
+		go c.writer()
+		c.read()
+	} else {
+		close(response)
+	}
 }
